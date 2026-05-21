@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StickyBottle – Cycling Fuel & Hydration Calculator</title>
+    <style>
+        :root {
+            --background: hsl(0 0% 100%);
+            --foreground: hsl(222.2 47.4% 11.2%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 47.4% 11.2%);
+            --primary: hsl(222.2 47.4% 11.2%);
+            --primary-foreground: hsl(210 40% 98%);
+            --muted: hsl(210 40% 96.1%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(222.2 84% 4.9%);
+            --radius: 0.5rem;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: var(--foreground);
+            background: hsl(210 40% 96.1%);
+            padding: 2rem 1rem;
+            margin: 0 auto;
+            max-width: 720px;
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: var(--foreground);
+            margin: 0 0 0.25rem;
+        }
+
+        h2 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--foreground);
+            margin: 0 0 1rem;
+        }
+
+        h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--foreground);
+            margin: 0 0 0.625rem;
+        }
+
+        p { margin: 0 0 0.5rem; }
+
+        hr { display: none; }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        /* Form layout */
+        br { display: none; }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.625rem;
+        }
+
+        .form-row:last-child { margin-bottom: 0; }
+
+        label {
+            display: inline-block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--foreground);
+            min-width: 220px;
+            flex-shrink: 0;
+            vertical-align: middle;
+            margin: 0;
+        }
+
+        label:has(input[type="checkbox"]) {
+            display: flex;
+            min-width: auto;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 400;
+            margin-bottom: 0.375rem;
+            cursor: pointer;
+        }
+
+        input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        input[type="number"],
+        select {
+            display: inline-flex;
+            width: 140px;
+            height: 2.25rem;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid var(--input);
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-family: inherit;
+            background: var(--background);
+            color: var(--foreground);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            vertical-align: middle;
+        }
+
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--foreground);
+            box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+        }
+
+        small {
+            color: var(--muted-foreground);
+            font-size: 0.8125rem;
+            display: block;
+        }
+
+        /* Calculate button */
+        button#calculateBtn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border: none;
+            border-radius: calc(var(--radius) - 2px);
+            padding: 0.5rem 1.5rem;
+            height: 2.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        button#calculateBtn:hover { opacity: 0.88; }
+
+        button#calculateBtn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+        }
+
+        /* Results */
+        #results { margin-top: 0; }
+
+        /* Bottle Recipe emphasis */
+        .recipe-section {
+            background: hsl(222 60% 97%);
+            border: 1.5px solid hsl(222.2 47.4% 72%);
+            border-radius: calc(var(--radius) - 2px);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .recipe-section h3 {
+            font-size: 1rem;
+            color: hsl(222.2 47.4% 20%);
+            margin-bottom: 0.75rem;
+        }
+
+        .recipe-section table {
+            margin-bottom: 0;
+        }
+
+        .recipe-section p {
+            color: hsl(222.2 47.4% 30%);
+        }
+        /* Warnings */
+        .warnings { margin: 0 0 0.75rem; }
+
+        .warn-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .warn-item.caution {
+            background: #fff8e1;
+            border: 1px solid #f9a825;
+            color: #7a5200;
+        }
+
+        .warn-item.danger {
+            background: #fdecea;
+            border: 1px solid #e53935;
+            color: #7a0000;
+        }
+
+        .warn-icon { flex-shrink: 0; }
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 1.25rem;
+            font-size: 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            overflow: hidden;
+        }
+
+        table:last-of-type { margin-bottom: 0; }
+
+        td, th {
+            padding: 0.625rem 0.875rem;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: var(--muted);
+            font-weight: 600;
+            font-size: 0.8125rem;
+            letter-spacing: 0.01em;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: hsl(210 40% 98.5%); }
+
+        /* Align columns across result section tables */
+        #results table {
+            table-layout: fixed;
+        }
+
+        #results table td:first-child,
+        #results table th:first-child {
+            width: 40%;
+        }
+
+        /* Info tooltips */
+        .tip-wrap {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .tip-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            color: var(--muted-foreground);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 1.125rem;
+            height: 1.125rem;
+            font-size: 0.6875rem;
+            font-style: italic;
+            font-weight: 700;
+            font-family: Georgia, serif;
+            cursor: pointer;
+            padding: 0;
+            vertical-align: middle;
+            margin-left: 0.25rem;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+
+        .tip-btn:hover {
+            background: var(--muted);
+            color: var(--foreground);
+            border-color: var(--foreground);
+        }
+
+        .tip-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+        }
+
+        .tip-box {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            z-index: 100;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0.625rem 0.875rem;
+            font-size: 0.8125rem;
+            color: var(--foreground);
+            max-width: min(300px, 90vw);
+            min-width: 180px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05);
+            line-height: 1.5;
+            font-weight: normal;
+            white-space: normal;
+        }
+
+        .tip-box.open { display: block; }
+
+        #recipeNote {
+            color: var(--muted-foreground);
+            font-size: 0.8125rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Warnings */
+        .warnings {
+            background: hsl(38 92% 95%);
+            border: 1px solid hsl(38 92% 80%);
+            color: hsl(32 80% 30%);
+            border-radius: calc(var(--radius) - 2px);
+            padding: 0.625rem 0.875rem;
+            font-size: 0.8125rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Mobile */
+        @media (max-width: 500px) {
+            body { padding: 1rem; }
+
+            h1 { font-size: 1.5rem; }
+
+            .card { padding: 1rem; }
+
+            .form-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.375rem;
+            }
+
+            label { min-width: auto; }
+
+            label:has(input[type="checkbox"]) { display: flex; }
+
+            input[type="number"],
+            select {
+                width: 100%;
+            }
+
+            td, th {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.8125rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div style="margin-bottom:1.5rem;">
+        <h1>StickyBottle</h1>
+        <p style="color:var(--muted-foreground);margin:0;">Calculate carb demand, fueling targets, and hydration needs for your ride.</p>
+    </div>
+
+    <!-- Ride Details -->
+    <div class="card">
+        <h2>Ride Details</h2>
+        <div class="form-row"><label for="ridePower">Average Power (watts)</label>
+        <input type="number" id="ridePower" value="200" min="0"></div>
+
+        <div class="form-row"><label for="rideDuration">Ride Duration (minutes)</label>
+        <input type="number" id="rideDuration" value="120" min="0" step="5"></div>
+
+        <div class="form-row"><label for="rideType">Ride Type</label>
+        <select id="rideType">
+            <option value="moderate">Moderate</option>
+            <option value="endurance">Endurance</option>
+            <option value="elite">Elite</option>
+        </select></div>
+
+        <div class="form-row"><label for="temperature">Temperature (°C)</label>
+        <input type="number" id="temperature" value="20" min="-10" max="50"></div>
+    </div>
+
+    <!-- Carb Sources -->
+    <div class="card">
+        <h2>Carb Sources <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About carb sources">i</button><div class="tip-box">Select the carb types you will use. Each uses a different intestinal transporter, setting your absorption ceiling.</div></span></h2>
+        <label><input type="checkbox" id="useGlucose" checked> Glucose / Maltodextrin <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About glucose">i</button><div class="tip-box"><strong>SGLT1 transporter</strong> – up to 60 g/hr.<br>e.g. plain energy gels, sports drinks, dextrose, maltodextrin powder, white rice, white bread.</div></span></label>
+        <label><input type="checkbox" id="useFructose" checked> Fructose <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About fructose">i</button><div class="tip-box"><strong>GLUT5 transporter</strong> – up to 40 g/hr additional.<br>e.g. white sugar (sucrose), honey, fruit, many "2:1 ratio" gels &amp; chews — always paired with glucose for best effect.</div></span></label>
+        <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="Transporter ceiling info">i</button><div class="tip-box"><span id="carbSourcesHint"></span></div></span>
+    </div>
+
+    <!-- Hydration Rate -->
+    <div class="card">
+        <h2>Hydration Rate <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About hydration rate">i</button><div class="tip-box">Default hydration rate for your ride type and temperature. Override below if desired.</div></span></h2>
+        <div class="form-row"><label for="hydrationRate">Hydration Rate (ml/hr)</label>
+        <input type="number" id="hydrationRate" min="0" step="25"> <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="Hydration rate details">i</button><div class="tip-box"><span id="hydrationRateHint"></span></div></span></div>
+
+        <div class="form-row"><label for="bottleSize">Bottle Size (ml)</label>
+        <input type="number" id="bottleSize" value="750" min="1" step="50"></div>
+
+        <div class="form-row"><label for="forceBottles">Force Bottle Count</label>
+        <input type="number" id="forceBottles" min="1" step="1" placeholder="auto"> <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About forced bottle count">i</button><div class="tip-box">Leave blank to calculate bottles automatically from your hydration rate. Enter a number to lock the bottle count — carb and sodium concentrations will be increased to hit your targets within those bottles. Warnings appear if hydration falls short or the solution becomes oversaturated.</div></span></div>
+    </div>
+
+    <!-- Fueling Rate -->
+    <div class="card">
+        <h2>Fueling Rate <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About fueling rate">i</button><div class="tip-box">Default fueling rate based on your power output, capped by your carb source selection. Override below if desired.</div></span></h2>
+        <div class="form-row"><label for="fuelingRate">Fueling Rate (g/hr)</label>
+        <input type="number" id="fuelingRate" min="0" step="1"> <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="Fueling rate details">i</button><div class="tip-box"><span id="fuelingRateHint"></span></div></span></div>
+        <small id="fuelingClampNote" style="margin-top:0.375rem;color:#7a5200;"></small>
+    </div>
+
+    <!-- Electrolytes -->
+    <div class="card">
+        <h2>Electrolytes (Sodium) <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="About electrolytes">i</button><div class="tip-box">Default sodium rate for your ride type and temperature. Override below if desired.</div></span></h2>
+        <div class="form-row"><label for="sodiumRate">Sodium Rate (mg/hr)</label>
+        <input type="number" id="sodiumRate" min="0" step="25"> <span class="tip-wrap"><button class="tip-btn" type="button" aria-label="Sodium rate details">i</button><div class="tip-box"><span id="sodiumRateHint"></span></div></span></div>
+    </div>
+
+    <!-- Calculate -->
+    <div class="card" style="padding:1rem 1.5rem;">
+        <button type="button" id="calculateBtn">Calculate</button>
+    </div>
+
+    <!-- Results -->
+    <div id="results" hidden>
+      <div class="card">
+        <h2 style="margin-bottom:1.25rem;">Results</h2>
+
+        <div id="warningsDiv" class="warnings" hidden></div>
+
+        <div class="recipe-section">
+          <h3>Bottle Recipe</h3>
+          <p id="recipeIntro"></p>
+          <table>
+              <thead>
+                  <tr><th>Ingredient</th><th>Per Bottle</th><th>All Bottles</th></tr>
+              </thead>
+              <tbody>
+                  <tr><td>Water</td><td id="recWaterPerBottle"></td><td id="recWaterTotal"></td></tr>
+                  <tr><td>Carbohydrate powder</td><td id="recCarbsPerBottle"></td><td id="recCarbsTotal"></td></tr>
+                  <tr><td>Sodium</td><td id="recSodiumPerBottle"></td><td id="recSodiumTotal"></td></tr>
+                  <tr><td>Table salt</td><td id="recSaltPerBottle"></td><td id="recSaltTotal"></td></tr>
+              </tbody>
+          </table>
+          <p id="recipeNote"></p>
+        </div>
+
+        <h3>Carb Demand</h3>
+        <table>
+            <tr><td>Metabolic burn rate</td><td id="resBurnRate"></td></tr>
+            <tr><td>Total carbs burned (est.)</td><td id="resTotalBurn"></td></tr>
+        </table>
+
+        <h3>Fueling Plan</h3>
+        <table>
+            <tr><td>Absorption ceiling</td><td id="resAbsorptionCap"></td></tr>
+            <tr><td>Target fueling rate</td><td id="resFuelRate"></td></tr>
+            <tr><td>Effective fueling rate</td><td id="resEffectiveFuelRate"></td></tr>
+            <tr><td>Total carbs to consume</td><td id="resTotalFuel"></td></tr>
+            <tr><td>Replacement ratio</td><td id="resReplacement"></td></tr>
+        </table>
+
+        <h3>Hydration Plan</h3>
+        <table>
+            <tr><td>Target hydration rate</td><td id="resHydrationRate"></td></tr>
+            <tr><td>Total fluid for ride</td><td id="resTotalFluid"></td></tr>
+            <tr><td>Bottles needed</td><td id="resBottlesNeeded"></td></tr>
+        </table>
+
+        <h3>Electrolyte Plan</h3>
+        <table>
+            <tr><td>Sodium rate</td><td id="resSodiumRate"></td></tr>
+            <tr><td>Total sodium for ride</td><td id="resTotalSodium"></td></tr>
+            <tr><td>Table salt equivalent</td><td id="resTotalSalt"></td></tr>
+            <tr><td>Sodium concentration</td><td id="resSodiumConc"></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <script>
+        const DEFAULTS = {
+            fueling: {
+                moderate:  { min: 30, max: 60, default: 45 },
+                endurance: { min: 60, max: 90, default: 75 },
+                elite:     { min: 90, max: 120, default: 105 }
+            },
+            hydration: {
+                // base ml/hr by ride type
+                moderate:  { base: 500 },
+                endurance: { base: 650 },
+                elite:     { base: 800 }
+            },
+            // temperature adjustment to hydration (ml/hr added)
+            tempAdjust: [
+                { maxC: 10,  adj: -150, label: "Cold (<10°C)" },
+                { maxC: 20,  adj: 0,    label: "Cool (10–20°C)" },
+                { maxC: 30,  adj: 200,  label: "Warm (20–30°C)" },
+                { maxC: 999, adj: 400,  label: "Hot (>30°C)" }
+            ],
+            // intestinal transporter absorption caps (g/hr)
+            carbSourceCaps: {
+                glucoseOnly:  60,
+                fructoseOnly: 40,
+                both:         90
+            },
+            // fraction of metabolic energy from carbs (fixed; used for fueling rate default)
+            carbFraction: 0.65,
+            // fraction of metabolic energy from carbs by ride type (used for burn-rate estimate only)
+            carbFractionByType: {
+                moderate:  0.55,
+                endurance: 0.70,
+                elite:     0.85
+            },
+            // gross mechanical efficiency
+            efficiency: 0.23,
+            // sodium mg/hr by ride type
+            sodium: {
+                moderate:  { min: 300, max: 500, default: 400 },
+                endurance: { min: 500, max: 700, default: 600 },
+                elite:     { min: 700, max: 1000, default: 800 }
+            },
+            // temperature adjustment to sodium (mg/hr)
+            sodiumTempAdjust: [
+                { maxC: 10,  adj: -100, label: "Cold (<10°C)" },
+                { maxC: 20,  adj: 0,    label: "Cool (10–20°C)" },
+                { maxC: 30,  adj: 150,  label: "Warm (20–30°C)" },
+                { maxC: 999, adj: 300,  label: "Hot (>30°C)" }
+            ],
+            // mg sodium per gram of table salt (NaCl is ~39% sodium)
+            sodiumPerGramSalt: 390
+        };
+
+        const els = {
+            ridePower:       document.getElementById("ridePower"),
+            rideDuration:    document.getElementById("rideDuration"),
+            rideType:        document.getElementById("rideType"),
+            temperature:     document.getElementById("temperature"),
+            useGlucose:      document.getElementById("useGlucose"),
+            useFructose:     document.getElementById("useFructose"),
+            carbSourcesHint: document.getElementById("carbSourcesHint"),
+            fuelingRate:     document.getElementById("fuelingRate"),
+            hydrationRate:   document.getElementById("hydrationRate"),
+            bottleSize:      document.getElementById("bottleSize"),
+            sodiumRate:      document.getElementById("sodiumRate"),
+            fuelingHint:     document.getElementById("fuelingRateHint"),
+            fuelingClampNote: document.getElementById("fuelingClampNote"),
+            hydrationHint:   document.getElementById("hydrationRateHint"),
+            sodiumHint:      document.getElementById("sodiumRateHint"),
+            forceBottles:    document.getElementById("forceBottles"),
+            warningsDiv:     document.getElementById("warningsDiv"),
+            results:         document.getElementById("results"),
+            calculateBtn:    document.getElementById("calculateBtn")
+        };
+
+        let userOverrodeFueling = false;
+        let userOverrodeHydration = false;
+        let userOverrodeSodium = false;
+        let fuelingIsConcentrationCapped = false;
+
+        function getDefaultFuelingRate(power) {
+            const carbBurnPerHr = ((power || 0) * 3.6 / DEFAULTS.efficiency) * DEFAULTS.carbFraction / 16.7;
+            return Math.round(Math.max(0, carbBurnPerHr));
+        }
+
+        function getTempAdjustment(tempC) {
+            for (const bracket of DEFAULTS.tempAdjust) {
+                if (tempC <= bracket.maxC) return bracket;
+            }
+            return DEFAULTS.tempAdjust[DEFAULTS.tempAdjust.length - 1];
+        }
+
+        function getDefaultHydrationRate(type, tempC) {
+            const base = DEFAULTS.hydration[type].base;
+            const bracket = getTempAdjustment(tempC);
+            return Math.max(200, base + bracket.adj);
+        }
+
+        function getSodiumTempAdjustment(tempC) {
+            for (const bracket of DEFAULTS.sodiumTempAdjust) {
+                if (tempC <= bracket.maxC) return bracket;
+            }
+            return DEFAULTS.sodiumTempAdjust[DEFAULTS.sodiumTempAdjust.length - 1];
+        }
+
+        function getDefaultSodiumRate(type, tempC) {
+            const base = DEFAULTS.sodium[type].default;
+            const bracket = getSodiumTempAdjustment(tempC);
+            return Math.max(100, base + bracket.adj);
+        }
+
+        function getMaxAbsorption() {
+            const g = els.useGlucose.checked;
+            const f = els.useFructose.checked;
+            if (g && f) return DEFAULTS.carbSourceCaps.both;
+            if (g)      return DEFAULTS.carbSourceCaps.glucoseOnly;
+            if (f)      return DEFAULTS.carbSourceCaps.fructoseOnly;
+            return 0;
+        }
+
+        function updateDefaults(triggeredByHydration) {
+            const type = els.rideType.value;
+            const tempC = parseFloat(els.temperature.value) || 20;
+            const bracket = getTempAdjustment(tempC);
+
+            const maxAbs = getMaxAbsorption();
+            const g = els.useGlucose.checked;
+            const f = els.useFructose.checked;
+            if (g && f)  els.carbSourcesHint.textContent = "Both transporters active (SGLT1 + GLUT5): max " + DEFAULTS.carbSourceCaps.both + " g/hr absorbable.";
+            else if (g)  els.carbSourcesHint.textContent = "Glucose/SGLT1 only: max " + DEFAULTS.carbSourceCaps.glucoseOnly + " g/hr absorbable.";
+            else if (f)  els.carbSourcesHint.textContent = "Fructose/GLUT5 only: max " + DEFAULTS.carbSourceCaps.fructoseOnly + " g/hr absorbable.";
+            else         els.carbSourcesHint.textContent = "No carb source selected — fueling rate will be 0.";
+
+            const power = parseFloat(els.ridePower.value) || 0;
+            const powerDefault = getDefaultFuelingRate(power);
+            const hydDefault = getDefaultHydrationRate(type, tempC);
+            if (!userOverrodeHydration) {
+                els.hydrationRate.value = hydDefault;
+            }
+            const actualHydRate = parseFloat(els.hydrationRate.value) || hydDefault;
+            const concCapGPerHr = Math.floor(actualHydRate / 10); // keep carb concentration ≤ 100 g/L
+            const effectiveDefault = maxAbs > 0 ? Math.min(powerDefault, maxAbs, concCapGPerHr) : 0;
+            els.fuelingHint.textContent =
+                "Carb burn at " + power + "W = " + powerDefault + " g/hr" +
+                ", absorb cap " + maxAbs + " g/hr, concentration cap " + concCapGPerHr +
+                " g/hr → effective default: " + effectiveDefault + " g/hr";
+            els.hydrationHint.textContent =
+                type + " @ " + bracket.label + ": base " + DEFAULTS.hydration[type].base +
+                " ml/hr, temp adj " + (bracket.adj >= 0 ? "+" : "") + bracket.adj +
+                " → " + getDefaultHydrationRate(type, tempC) + " ml/hr";
+
+            const sod = DEFAULTS.sodium[type];
+            const sodBracket = getSodiumTempAdjustment(tempC);
+            els.sodiumHint.textContent =
+                type + " @ " + sodBracket.label + ": base " + sod.default +
+                " mg/hr (" + sod.min + "–" + sod.max + "), temp adj " +
+                (sodBracket.adj >= 0 ? "+" : "") + sodBracket.adj +
+                " → " + getDefaultSodiumRate(type, tempC) + " mg/hr";
+
+            const concIsCapping = maxAbs > 0 && concCapGPerHr < Math.min(powerDefault, maxAbs);
+            if (!userOverrodeFueling) {
+                if (!triggeredByHydration || fuelingIsConcentrationCapped || concIsCapping) {
+                    els.fuelingRate.value = effectiveDefault;
+                }
+                fuelingIsConcentrationCapped = concIsCapping;
+                let clampMsg = '';
+                if (maxAbs > 0 && powerDefault > effectiveDefault) {
+                    if (concIsCapping) {
+                        clampMsg = 'Capped at ' + effectiveDefault + ' g/hr by carb concentration limit (≤ 100 g/L at ' + actualHydRate + ' ml/hr hydration). Increase your hydration rate or add more bottles to raise this ceiling.';
+                    } else {
+                        clampMsg = 'Capped at ' + effectiveDefault + ' g/hr by intestinal absorption limit (' + maxAbs + ' g/hr). Add fructose to unlock the dual-transporter ceiling (up to ' + DEFAULTS.carbSourceCaps.both + ' g/hr).';
+                    }
+                }
+                els.fuelingClampNote.textContent = clampMsg;
+            } else {
+                els.fuelingClampNote.textContent = '';
+            }
+
+            // hydration rate input was already set above
+            if (!userOverrodeSodium) {
+                els.sodiumRate.value = getDefaultSodiumRate(type, tempC);
+            }
+        }
+
+        function calculate() {
+            const power           = parseFloat(els.ridePower.value) || 0;
+            const duration        = (parseFloat(els.rideDuration.value) || 0) / 60;
+            const type            = els.rideType.value;
+            const enteredFuelRate = parseFloat(els.fuelingRate.value) || 0;
+            const maxAbs          = getMaxAbsorption();
+            const fuelRate        = Math.min(enteredFuelRate, maxAbs);
+            const hydRate         = parseFloat(els.hydrationRate.value) || 0;
+            const bottleSize      = parseFloat(els.bottleSize.value) || 750;
+            const sodRate         = parseFloat(els.sodiumRate.value) || 0;
+
+            // Carb demand from power
+            // Mechanical kJ/hr = watts * 3.6
+            const mechKJPerHr = power * 3.6;
+            // Metabolic kJ/hr = mechanical / efficiency
+            const metabKJPerHr = mechKJPerHr / DEFAULTS.efficiency;
+            // Carb kJ/hr = metabolic * carb fraction (type-based estimate for burn display)
+            const carbFrac = DEFAULTS.carbFractionByType[type];
+            const carbKJPerHr = metabKJPerHr * carbFrac;
+            // Carb grams/hr = carb kJ / 16.7 kJ per gram of carbohydrate
+            const carbBurnPerHr = carbKJPerHr / 16.7;
+            const totalCarbBurn = carbBurnPerHr * duration;
+
+            // Fueling
+            const totalFuel = fuelRate * duration;
+            const replacementPct = totalCarbBurn > 0
+                ? Math.round((totalFuel / totalCarbBurn) * 100)
+                : 0;
+
+            // Hydration target (from rate)
+            const totalFluid = hydRate * duration;
+
+            // Forced or auto bottle count
+            const forcedCount = parseInt(els.forceBottles.value) || 0;
+            let bottlesNeeded, waterPerBottle, actualFluid;
+            if (forcedCount > 0) {
+                bottlesNeeded  = forcedCount;
+                waterPerBottle = bottleSize;
+                actualFluid    = forcedCount * bottleSize;
+            } else {
+                bottlesNeeded  = Math.ceil(totalFluid / bottleSize);
+                waterPerBottle = bottlesNeeded > 0 ? totalFluid / bottlesNeeded : 0;
+                actualFluid    = totalFluid;
+            }
+
+            // Electrolytes
+            const totalSodium = sodRate * duration;
+            const totalSaltG = totalSodium / DEFAULTS.sodiumPerGramSalt;
+            const carbConcGPerL    = actualFluid > 0 ? totalFuel / (actualFluid / 1000) : 0;
+            const sodiumConcMgPerL = actualFluid > 0
+                ? Math.round(totalSodium / (actualFluid / 1000))
+                : 0;
+
+            // Warnings
+            const warnings = [];
+            if (forcedCount > 0 && actualFluid < totalFluid - 1) {
+                const shortfallMl = Math.round(totalFluid - actualFluid);
+                warnings.push({ level: 'caution', text:
+                    'Hydration is ' + shortfallMl + '\u202fml below target: ' +
+                    forcedCount + ' bottle' + (forcedCount !== 1 ? 's' : '') +
+                    ' carries ' + Math.round(actualFluid) + '\u202fml but the recommended target is ' +
+                    Math.round(totalFluid) + '\u202fml. Consider adding more bottles or reducing your hydration rate.'
+                });
+            }
+            if (carbConcGPerL > 150) {
+                warnings.push({ level: 'danger', text:
+                    'Carb concentration critically high: ' + carbConcGPerL.toFixed(0) +
+                    '\u202fg/L \u2014 solution is oversaturated for practical gut absorption (max \u2248\u202f100\u202fg/L). Increase bottle count or reduce fueling rate.'
+                });
+            } else if (carbConcGPerL > 100) {
+                warnings.push({ level: 'caution', text:
+                    'High carb concentration: ' + carbConcGPerL.toFixed(0) +
+                    '\u202fg/L exceeds the comfortable absorption range (\u2264\u202f100\u202fg/L) and may cause GI distress. Increase bottle count or reduce fueling rate.'
+                });
+            }
+            if (sodiumConcMgPerL > 1500) {
+                warnings.push({ level: 'danger', text:
+                    'Sodium concentration critically high: ' + sodiumConcMgPerL +
+                    '\u202fmg/L \u2014 solution is oversaturated for safe use and may impair hydration absorption. Reduce sodium rate or increase bottle count.'
+                });
+            } else if (sodiumConcMgPerL > 1000) {
+                warnings.push({ level: 'caution', text:
+                    'Solution will taste very salty: ' + sodiumConcMgPerL +
+                    '\u202fmg/L sodium. Most athletes find drinks above 1\u2009000\u202fmg/L unpalatable; typical sports drinks contain 400\u2013800\u202fmg/L.'
+                });
+            }
+            if (warnings.length > 0) {
+                els.warningsDiv.innerHTML = warnings.map(function(w) {
+                    return '<div class="warn-item ' + w.level + '">' +
+                        '<span class="warn-icon">' + (w.level === 'danger' ? '\u26d4' : '\u26a0\ufe0f') + '</span>' +
+                        '<span>' + w.text + '</span></div>';
+                }).join('');
+                els.warningsDiv.hidden = false;
+            } else {
+                els.warningsDiv.innerHTML = '';
+                els.warningsDiv.hidden = true;
+            }
+
+            // Display
+            document.getElementById("resBurnRate").textContent =
+                Math.round(carbBurnPerHr) + " g/hr";
+            document.getElementById("resTotalBurn").textContent =
+                Math.round(totalCarbBurn) + " g";
+
+            const gC = els.useGlucose.checked;
+            const fC = els.useFructose.checked;
+            let capLabel;
+            if (gC && fC)  capLabel = maxAbs + " g/hr (glucose + fructose, dual transporter)";
+            else if (gC)   capLabel = maxAbs + " g/hr (glucose / maltodextrin only)";
+            else if (fC)   capLabel = maxAbs + " g/hr (fructose only)";
+            else           capLabel = "0 g/hr (no carb source selected)";
+            document.getElementById("resAbsorptionCap").textContent = capLabel;
+            document.getElementById("resFuelRate").textContent =
+                enteredFuelRate + " g/hr" + (enteredFuelRate > maxAbs ? " ⚠️ exceeds cap" : "");
+            document.getElementById("resEffectiveFuelRate").textContent =
+                fuelRate + " g/hr";
+            document.getElementById("resTotalFuel").textContent =
+                Math.round(totalFuel) + " g";
+            document.getElementById("resReplacement").textContent =
+                replacementPct + "% of estimated burn";
+            document.getElementById("resHydrationRate").textContent =
+                hydRate + " ml/hr";
+            document.getElementById("resTotalFluid").textContent =
+                Math.round(totalFluid) + " ml (" +
+                (totalFluid / 1000).toFixed(1) + " L)";
+            document.getElementById("resBottlesNeeded").textContent =
+                bottlesNeeded + " × " + bottleSize + " ml bottle" + (bottlesNeeded !== 1 ? "s" : "") +
+                (forcedCount > 0 ? " (forced)" : "");
+
+            document.getElementById("resSodiumRate").textContent =
+                sodRate + " mg/hr";
+            document.getElementById("resTotalSodium").textContent =
+                Math.round(totalSodium) + " mg";
+            document.getElementById("resTotalSalt").textContent =
+                totalSaltG.toFixed(1) + " g table salt (" +
+                (totalSaltG / 5).toFixed(1) + " tsp)";
+            document.getElementById("resSodiumConc").textContent =
+                sodiumConcMgPerL + " mg sodium per L of fluid";
+
+            // Bottle recipe
+            if (bottlesNeeded > 0) {
+                const carbsPerBottle    = totalFuel / bottlesNeeded;
+                const sodiumPerBottle   = totalSodium / bottlesNeeded;
+                const saltPerBottle     = sodiumPerBottle / DEFAULTS.sodiumPerGramSalt;
+                const saltTspPerBottle  = saltPerBottle / 5;  // 1 tsp table salt ≈ 5 g
+                const saltTspTotal      = totalSaltG / 5;
+
+                document.getElementById("recipeIntro").textContent =
+                    "Mix the following into each of your " + bottlesNeeded + " \u00d7 " +
+                    bottleSize + "\u202fml bottle" + (bottlesNeeded !== 1 ? "s" : "") +
+                    " (fill each to " + Math.round(waterPerBottle) + "\u202fml):";
+                document.getElementById("recWaterPerBottle").textContent =
+                    Math.round(waterPerBottle) + "\u202fml";
+                document.getElementById("recWaterTotal").textContent =
+                    Math.round(actualFluid) + "\u202fml (" + (actualFluid / 1000).toFixed(2) + "\u202fL)";
+                document.getElementById("recCarbsPerBottle").textContent =
+                    carbsPerBottle.toFixed(1) + "\u202fg";
+                document.getElementById("recCarbsTotal").textContent =
+                    Math.round(totalFuel) + "\u202fg";
+                document.getElementById("recSodiumPerBottle").textContent =
+                    Math.round(sodiumPerBottle) + "\u202fmg";
+                document.getElementById("recSodiumTotal").textContent =
+                    Math.round(totalSodium) + "\u202fmg";
+                document.getElementById("recSaltPerBottle").textContent =
+                    saltPerBottle.toFixed(1) + "\u202fg (" + saltTspPerBottle.toFixed(1) + "\u202ftsp)";
+                document.getElementById("recSaltTotal").textContent =
+                    totalSaltG.toFixed(1) + "\u202fg (" + saltTspTotal.toFixed(1) + "\u202ftsp)";
+            } else {
+                document.getElementById("recipeIntro").textContent = "No bottles required for this ride.";
+                ["recWaterPerBottle","recWaterTotal","recCarbsPerBottle","recCarbsTotal",
+                 "recSodiumPerBottle","recSodiumTotal","recSaltPerBottle","recSaltTotal"].forEach(function(id) {
+                    document.getElementById(id).textContent = "\u2014";
+                });
+                document.getElementById("recipeNote").textContent = "";
+            }
+
+            els.results.hidden = false;
+        }
+
+        // Events
+        els.useGlucose.addEventListener("change", function () {
+            userOverrodeFueling = false;
+            updateDefaults();
+        });
+        els.useFructose.addEventListener("change", function () {
+            userOverrodeFueling = false;
+            updateDefaults();
+        });
+        els.ridePower.addEventListener("input", function () {
+            userOverrodeFueling = false;
+            updateDefaults();
+        });
+        els.rideType.addEventListener("change", function () {
+            userOverrodeHydration = false;
+            userOverrodeSodium = false;
+            updateDefaults();
+        });
+        els.temperature.addEventListener("input", function () {
+            userOverrodeHydration = false;
+            userOverrodeSodium = false;
+            updateDefaults();
+        });
+        els.fuelingRate.addEventListener("input", function () {
+            userOverrodeFueling = true;
+        });
+        els.hydrationRate.addEventListener("input", function () {
+            userOverrodeHydration = true;
+            updateDefaults(true);
+        });
+        els.sodiumRate.addEventListener("input", function () {
+            userOverrodeSodium = true;
+        });
+        els.calculateBtn.addEventListener("click", calculate);
+
+        // Tooltip toggle
+        document.querySelectorAll('.tip-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const box = btn.nextElementSibling;
+                const wasOpen = box.classList.contains('open');
+                document.querySelectorAll('.tip-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!wasOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.tip-box')) {
+                document.querySelectorAll('.tip-box.open').forEach(function(b) { b.classList.remove('open'); });
+            }
+        });
+
+        // Init
+        updateDefaults();
+    </script>
+</body>
+</html>
